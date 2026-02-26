@@ -26,7 +26,7 @@ const ADDONS = [
   { id: 'espresso', name: 'Espresso Shot', price: 20, image: 'https://placehold.co/150x150/1f2937/ffffff?text=☕' },
 ];
 
-export default function ProductSelection({ goToCart, cart, setCart }) {
+export default function ProductSelection({ goToCart, cart, setCart, openAdmin }) {
   const [activeModalProduct, setActiveModalProduct] = useState(null);
   const [modalAddons, setModalAddons] = useState({});
   const [modalQty, setModalQty] = useState(1);
@@ -90,7 +90,8 @@ export default function ProductSelection({ goToCart, cart, setCart }) {
 
       {/* HEADER */}
       <div className="flex justify-between items-center w-full mb-8 relative z-50">
-        <div className="w-16 h-16 bg-white/30 rounded-xl backdrop-blur-md flex items-center justify-center font-bold text-xl shadow-lg">
+        <div onDoubleClick={openAdmin} // <--- ADD THIS LINE HERE
+         className="w-16 h-16 bg-white/30 rounded-xl backdrop-blur-md flex items-center justify-center font-bold text-xl shadow-lg">
           VH
         </div>
         
