@@ -1,9 +1,17 @@
+// frontend/src/components/ProductSelection.jsx
 import React, { useState } from 'react';
+
+import Vanilla from '../assets/Vanilla.png';
+import Chocolate from '../assets/Chocolate.png';
+
+// ADDON IMAGES (PLACEHOLDERS FOR NOW - REPLACE WITH REAL ONES)
+import Banana from '../assets/Banana.png';
+import Creatine from '../assets/Creatine.png';
 
 // 🥤 10 Protein Base Options
 const PRODUCTS = [
-  { id: 'vanilla', name: 'Vanilla Bean', price: 80, image: 'https://placehold.co/300x400/ffffff/000000?text=Vanilla\nBean' },
-  { id: 'chocolate', name: 'Chocolate Fudge', price: 80, image: 'https://placehold.co/300x400/ffffff/000000?text=Chocolate\nFudge' },
+  { id: 'vanilla', name: 'Vanilla Bean', price: 80, image: Vanilla },
+  { id: 'chocolate', name: 'Chocolate Fudge', price: 80, image: Chocolate },
   { id: 'strawberry', name: 'Strawberry', price: 80, image: 'https://placehold.co/300x400/ffffff/000000?text=Strawberry\nDelight' },
   { id: 'peanut', name: 'Peanut Protein', price: 90, image: 'https://placehold.co/300x400/ffffff/000000?text=Peanut\nPower' },
   { id: 'cookies', name: 'Cookies & Cream', price: 95, image: 'https://placehold.co/300x400/ffffff/000000?text=Cookies\nCream' },
@@ -16,8 +24,8 @@ const PRODUCTS = [
 
 // 🍌 8 Visual Booster Add-ons
 const ADDONS = [
-  { id: 'banana', name: 'Fresh Banana', price: 10, image: 'https://placehold.co/150x150/1f2937/FF8C00?text=🍌' },
-  { id: 'creatine', name: 'Creatine (5g)', price: 15, image: 'https://placehold.co/150x150/1f2937/00CED1?text=💪' },
+  { id: 'banana', name: 'Fresh Banana', price: 10, image:  Banana},
+  { id: 'creatine', name: 'Creatine (5g)', price: 15, image:  Creatine},
   { id: 'dryfruits', name: 'Dry Fruits', price: 20, image: 'https://placehold.co/150x150/1f2937/FF8C00?text=🥜' },
   { id: 'oats', name: 'Rolled Oats', price: 10, image: 'https://placehold.co/150x150/1f2937/ffffff?text=🌾' },
   { id: 'pb', name: 'Peanut Butter', price: 15, image: 'https://placehold.co/150x150/1f2937/FF8C00?text=🍯' },
@@ -26,7 +34,7 @@ const ADDONS = [
   { id: 'espresso', name: 'Espresso Shot', price: 20, image: 'https://placehold.co/150x150/1f2937/ffffff?text=☕' },
 ];
 
-export default function ProductSelection({ goToCart, cart, setCart, }) {
+export default function ProductSelection({ goToCart, cart, setCart, goToPay}) {
   const [activeModalProduct, setActiveModalProduct] = useState(null);
   const [modalAddons, setModalAddons] = useState({});
   const [modalQty, setModalQty] = useState(1);
@@ -68,6 +76,9 @@ export default function ProductSelection({ goToCart, cart, setCart, }) {
     setCart([...cart, finalItem]);
     closeModal();
   };
+
+  // Calculate total for the quick-pay floating bar
+  const cartTotal = cart.reduce((sum, item) => sum + item.unitPrice * item.qty, 0);
 
   return (
     <div className="w-full h-full bg-gradient-to-r from-orange-400 via-yellow-500 to-[#17cf17] text-white flex flex-col pt-8 px-12 relative overflow-hidden">
@@ -198,6 +209,43 @@ export default function ProductSelection({ goToCart, cart, setCart, }) {
             </div>
 
           </div>
+        </div>
+      )}
+
+      {/* 🚀 EXPRESS CHECKOUT FLOATING BAR */}
+      {cart.length > 0 && (
+        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 w-11/12 max-w-3xl bg-black/80 backdrop-blur-xl border border-[#17cf17]/50 p-6 rounded-3xl flex justify-between items-center shadow-[0_10px_40px_rgba(23,207,23,0.3)] animate-[slideInUp_0.5s_ease-out] z-[9998]">
+          
+          {/* Order Info */}
+          <div className="flex flex-col">
+            <span className="text-gray-400 font-bold tracking-widest text-sm uppercase mb-1">
+              {cart.length} Item{cart.length > 1 ? 's' : ''} Selected
+            </span>
+            <span className="text-white text-4xl font-extrabold">
+              Total: <span className="text-[#FF8C00]">₹{cartTotal}</span>
+            </span>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-4 items-center">
+            {/* Keeping the Cart system alive just in case they want to edit */}
+            <button 
+              onClick={goToCart} 
+              className="bg-gray-800 text-white px-6 py-4 rounded-2xl font-bold text-xl hover:bg-gray-700 transition-colors border border-gray-700"
+            >
+              View Cart
+            </button>
+            
+            {/* The giant, glowing Instant Pay button */}
+            <button 
+              onClick={goToPay} 
+              className="bg-[#17cf17] text-black px-10 py-4 rounded-2xl font-extrabold text-2xl shadow-[0_0_20px_rgba(23,207,23,0.5)] animate-pulse hover:scale-105 transition-transform flex items-center gap-3"
+            >
+              Pay to Get Drink
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            </button>
+          </div>
+          
         </div>
       )}
     </div>

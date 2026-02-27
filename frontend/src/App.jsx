@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 
-// Components
 import ProductSelection from './components/ProductSelection';
 import Cart from './components/Cart';
 import Payment from './components/Payment';
@@ -12,7 +11,6 @@ import AdsPlayer from './components/AdsPlayer';
 
 const socket = io('http://localhost:5001'); 
 
-// Processing Screen Component
 const ProcessingScreen = ({ onComplete }) => {
   const [progress, setProgress] = useState(0);
 
@@ -72,15 +70,12 @@ const ProcessingScreen = ({ onComplete }) => {
   );
 };
 
-// -------------------------------------------------------------
-// 📠 THE KIOSK APPLICATION (With Idle Detection)
-// -------------------------------------------------------------
 function KioskApp() {
   const [currentScreen, setCurrentScreen] = useState('SELECT'); 
   const [cart, setCart] = useState([]);
   const [isIdle, setIsIdle] = useState(false);
 
-  // IDLE DETECTOR LOGIC
+  // 🚀 UPGRADED IDLE DETECTOR: Pauses during payment
   useEffect(() => {
     let idleTimeout;
 
@@ -88,21 +83,22 @@ function KioskApp() {
       setIsIdle(false);
       clearTimeout(idleTimeout);
       
-      // If no screen touch for 15 seconds, switch to Ads
-      idleTimeout = setTimeout(() => {
-        console.log("⏰ 15 seconds passed! Activating Ads Mode.");
-        setIsIdle(true);
-        setCart([]); // Clear any abandoned carts
-        setCurrentScreen('SELECT'); 
-      }, 15000); 
+      // ONLY start the 15-second timer if they are on the Select or Cart screens!
+      if (currentScreen === 'SELECT' || currentScreen === 'CART') {
+        idleTimeout = setTimeout(() => {
+          console.log("⏰ 15 seconds passed! Activating Ads Mode.");
+          setIsIdle(true);
+          setCart([]); // Clear any abandoned carts
+          setCurrentScreen('SELECT'); 
+        }, 15000); 
+      }
     };
 
-    // 🚨 FIX: We removed 'mousemove' so laptop vibrations don't reset the timer
     window.addEventListener('mousedown', resetIdleTimer);
     window.addEventListener('touchstart', resetIdleTimer);
     window.addEventListener('click', resetIdleTimer);
 
-    // Start timer immediately
+    // Start timer immediately based on current screen
     resetIdleTimer();
 
     return () => {
@@ -111,9 +107,8 @@ function KioskApp() {
       window.removeEventListener('click', resetIdleTimer);
       clearTimeout(idleTimeout);
     };
-  }, []); // <-- Dependency array is empty so it runs perfectly
+  }, [currentScreen]); // <-- Added currentScreen as a dependency so it knows when to pause!
 
-  // SOCKET LOGIC
   useEffect(() => {
     socket.emit('register_machine', 'vm_001');
     socket.on('payment_success', () => {
@@ -124,15 +119,12 @@ function KioskApp() {
 
   const getTotal = () => cart.reduce((sum, item) => sum + item.unitPrice * item.qty, 0);
 
-  // WAKE UP HANDLER
-  const handleWakeUp = () => {
-    setIsIdle(false);
-  };
+  const handleWakeUp = () => setIsIdle(false);
 
   const renderScreen = () => {
     switch (currentScreen) {
       case 'SELECT':
-        return <ProductSelection cart={cart} setCart={setCart} goToCart={() => setCurrentScreen('CART')} />;
+        return <ProductSelection cart={cart} setCart={setCart} goToCart={() => setCurrentScreen('CART')} goToPay={() => setCurrentScreen('PAY')} />;
       case 'CART':
         return <Cart cart={cart} setCart={setCart} goBack={() => setCurrentScreen('SELECT')} goToPay={() => setCurrentScreen('PAY')} />;
       case 'PAY':
@@ -140,35 +132,24 @@ function KioskApp() {
       case 'PROCESSING':
         return <ProcessingScreen onComplete={() => { setCart([]); setCurrentScreen('SELECT'); }} />;
       default:
-        return <ProductSelection cart={cart} setCart={setCart} goToCart={() => setCurrentScreen('CART')} />;
+        return <ProductSelection cart={cart} setCart={setCart} goToCart={() => setCurrentScreen('CART')} goToPay={() => setCurrentScreen('PAY')} />;
     }
   };
 
   return (
     <div className="w-screen h-screen overflow-hidden bg-black font-lexend select-none relative">
-      {/* If Idle, render the Ads Player OVER the whole app */}
       {isIdle && <AdsPlayer onWakeUp={handleWakeUp} />}
-      
-      {/* Otherwise render the normal Kiosk */}
       {!isIdle && renderScreen()}
     </div>
   );
 }
 
-// -------------------------------------------------------------
-// 🌐 MAIN APP ROUTER
-// -------------------------------------------------------------
 export default function App() {
   return (
     <Router>
       <Routes>
-        {/* The physical Machine UI */}
         <Route path="/" element={<KioskApp />} />
-        
-        {/* The remote Admin Dashboard */}
         <Route path="/admin" element={<Admin goBack={() => window.location.href = '/'} />} />
-        
-        {/* Fallback */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>

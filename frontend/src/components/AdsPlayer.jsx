@@ -7,21 +7,18 @@ export default function AdsPlayer({ onWakeUp }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const videoRef = useRef(null);
 
-  // Fetch ads from database when player mounts
   useEffect(() => {
     const fetchAds = async () => {
       try {
         const res = await axios.get('http://localhost:5001/api/admin/ads');
         setPlaylist(res.data);
       } catch (error) {
-        // FIX: Actually using the 'error' variable so ESLint stops complaining
         console.error("Failed to load ads:", error);
       }
     };
     fetchAds();
   }, []);
 
-  // Timer logic for cycling ads
   useEffect(() => {
     if (playlist.length === 0) return;
 
@@ -33,7 +30,23 @@ export default function AdsPlayer({ onWakeUp }) {
     return () => clearTimeout(timer);
   }, [currentIndex, playlist]);
 
-  // If no ads are uploaded yet, show a default screensaver
+  // Helper function to check if a URL is a YouTube link
+  const isYouTube = (url) => {
+    return url.includes('youtube.com') || url.includes('youtu.be');
+  };
+
+  // Helper function to convert a normal YouTube link into a muted, autoplaying background embed
+  const getYouTubeEmbedUrl = (url) => {
+    let videoId = '';
+    if (url.includes('youtu.be/')) {
+      videoId = url.split('youtu.be/')[1].split('?')[0];
+    } else if (url.includes('v=')) {
+      videoId = url.split('v=')[1].split('&')[0];
+    }
+    // Adds parameters to autoplay, mute, hide controls, and loop
+    return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${videoId}&modestbranding=1`;
+  };
+
   if (playlist.length === 0) {
     return (
       <div onClick={onWakeUp} className="fixed inset-0 z-[99999] bg-black cursor-pointer flex flex-col items-center justify-center">
@@ -54,9 +67,29 @@ export default function AdsPlayer({ onWakeUp }) {
       </div>
 
       {currentAd.type === 'video' ? (
-        <video ref={videoRef} src={currentAd.url} autoPlay muted loop className="w-full h-full object-cover" />
+        isYouTube(currentAd.url) ? (
+          /* Render YouTube Player */
+          <iframe 
+            src={getYouTubeEmbedUrl(currentAd.url)} 
+            className="w-[150%] h-[150%] pointer-events-none" // 150% scales it up slightly to hide youtube black borders
+            allow="autoplay; encrypted-media" 
+            frameBorder="0"
+          />
+        ) : (
+          /* Render Standard MP4 Video */
+          <video ref={videoRef} src={currentAd.url} autoPlay muted loop className="w-full h-full object-cover" />
+        )
       ) : (
-        <img src={currentAd.url} alt="Advertisement" className="w-full h-full object-cover" />
+        /* Render Image */
+        <img 
+          src={currentAd.url} 
+          alt="Advertisement" 
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            // If the image fails to load, it will show a grey box instead of pure black so you know it's a broken link
+            e.target.src = 'https://placehold.co/1080x1920/333333/ffffff?text=Image+Link+Broken\nPlease+use+direct+image+address';
+          }}
+        />
       )}
     </div>
   );
